@@ -39,6 +39,16 @@
   .submit-btn:hover { background: #6ee7a0; }
   .submit-btn:active { transform: scale(0.99); }
   .submit-btn:disabled { background: #1a2e20; color: #2a4a30; cursor: not-allowed; transform: none; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .divider-line { flex: 1; height: 0.5px; background: #1e1e1e; }
+  .divider-text { font-size: 11px; color: #333; letter-spacing: 0.08em; text-transform: uppercase; }
+  .delete-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .delete-input { flex: 1; background: #0d0d0d; border: 0.5px solid #252525; border-radius: 8px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: #e8e8e0; outline: none; transition: border-color 0.15s; }
+  .delete-input:focus { border-color: #f87171; }
+  .delete-input::placeholder { color: #2e2e2e; }
+  .delete-btn { background: transparent; border: 0.5px solid #2a1a1a; border-radius: 8px; padding: 10px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: #633; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .delete-btn:hover { border-color: #f87171; color: #f87171; background: rgba(248,113,113,0.05); }
+  .delete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .reset-btn { width: 100%; background: transparent; border: 0.5px solid #1e1e1e; border-radius: 10px; padding: 13px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: #3a3a3a; cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
   .reset-btn:hover { border-color: #2e2e2e; color: #555; }
   .reset-btn.active { border-color: rgba(74,222,128,0.3); color: #4ade80; }
@@ -82,45 +92,25 @@
   <div class="card">
     <div class="section-label">Campaign</div>
     <div class="campaigns-grid">
-
       <button class="campaign-btn" data-campaign="solardemoai" onclick="selectCampaign(this)">
-        <span class="campaign-dot"></span>
-        Solar
-        <span class="campaign-tag">B2C</span>
+        <span class="campaign-dot"></span>Solar<span class="campaign-tag">B2C</span>
       </button>
-
       <button class="campaign-btn" data-campaign="hvac companies" onclick="selectCampaign(this)">
-        <span class="campaign-dot"></span>
-        HVAC
-        <span class="campaign-tag">B2B</span>
+        <span class="campaign-dot"></span>HVAC<span class="campaign-tag">B2B</span>
       </button>
-
       <button class="campaign-btn" data-campaign="roofing companies" onclick="selectCampaign(this)">
-        <span class="campaign-dot"></span>
-        Roofing
-        <span class="campaign-tag">B2B</span>
+        <span class="campaign-dot"></span>Roofing<span class="campaign-tag">B2B</span>
       </button>
-
       <button class="campaign-btn" data-campaign="water ai english" onclick="selectCampaign(this)">
-        <span class="campaign-dot"></span>
-        Water (EN)
-        <span class="campaign-tag">B2C</span>
+        <span class="campaign-dot"></span>Water (EN)<span class="campaign-tag">B2C</span>
       </button>
-
       <button class="campaign-btn" data-campaign="water ai spanish" onclick="selectCampaign(this)">
-        <span class="campaign-dot"></span>
-        Water (ES)
-        <span class="campaign-tag">B2C</span>
+        <span class="campaign-dot"></span>Water (ES)<span class="campaign-tag">B2C</span>
       </button>
-
       <button class="campaign-btn" data-campaign="" onclick="selectCampaign(this)">
-        <span class="campaign-dot"></span>
-        No Campaign
-        <span class="campaign-tag">F</span>
+        <span class="campaign-dot"></span>No Campaign<span class="campaign-tag">F</span>
       </button>
-
     </div>
-
     <div class="selected-display" id="selectedDisplay">
       <span>Tag:</span>
       <strong id="selectedTag"></strong>
@@ -128,7 +118,22 @@
   </div>
 
   <button class="submit-btn" id="submitBtn" onclick="createLead()">Create &amp; Trigger Workflow</button>
-  <button class="reset-btn" id="resetBtn" onclick="resetContact()">Reset / Delete Contact</button>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">Reset</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Delete contact by phone</div>
+    <div class="delete-row">
+      <input type="tel" class="delete-input" id="deletePhone" placeholder="+1 (000) 000-0000" />
+      <button class="delete-btn" id="deleteBtn" onclick="deleteByPhone()">Find &amp; Delete</button>
+    </div>
+  </div>
+
+  <button class="reset-btn" id="resetBtn" onclick="resetContact()">Delete Last Created Contact</button>
   <div class="status" id="status">Ready to test</div>
 
 </div>
@@ -159,7 +164,6 @@
     const firstName = document.getElementById('firstName').value.trim();
     const lastName = document.getElementById('lastName').value.trim();
     const phone = document.getElementById('phone').value.trim();
-
     if (!phone) { setStatus('Phone number is required', 'error'); return; }
 
     const btn = document.getElementById('submitBtn');
@@ -168,7 +172,6 @@
 
     try {
       const tags = selectedCampaign ? [selectedCampaign] : [];
-
       const res = await fetch(`${BASE_URL}/contacts/`, {
         method: 'POST',
         headers: {
@@ -178,36 +181,36 @@
         },
         body: JSON.stringify({ firstName, lastName, phone, locationId: LOCATION_ID, tags })
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-
       createdContactId = data.contact?.id;
       const label = selectedCampaign || 'No Campaign (Flow F)';
       setStatus(`Contact created — tag: "${label}"`, 'success');
       document.getElementById('resetBtn').classList.add('active');
-
+      document.getElementById('deletePhone').value = phone;
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
       btn.disabled = false;
     }
   }
 
+  async function deleteContact(contactId) {
+    const res = await fetch(`${BASE_URL}/contacts/${contactId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Version': '2021-07-28' }
+    });
+    if (!res.ok) throw new Error('Delete failed');
+  }
+
   async function resetContact() {
-    if (!createdContactId) { setStatus('No contact to delete', 'error'); return; }
+    if (!createdContactId) { setStatus('No contact from this session to delete', 'error'); return; }
     setStatus('Deleting contact...', 'loading');
     try {
-      const res = await fetch(`${BASE_URL}/contacts/${createdContactId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${API_KEY}`,
-          'Version': '2021-07-28'
-        }
-      });
-      if (!res.ok) throw new Error('Delete failed');
+      await deleteContact(createdContactId);
       createdContactId = null;
       document.getElementById('submitBtn').disabled = false;
       document.getElementById('phone').value = '';
+      document.getElementById('deletePhone').value = '';
       document.querySelectorAll('.campaign-btn').forEach(b => b.classList.remove('selected'));
       document.getElementById('selectedDisplay').classList.remove('visible');
       document.getElementById('resetBtn').classList.remove('active');
@@ -216,6 +219,55 @@
       setTimeout(() => setStatus('Ready to test'), 3000);
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteByPhone() {
+    const phone = document.getElementById('deletePhone').value.trim();
+    if (!phone) { setStatus('Enter a phone number to search', 'error'); return; }
+
+    const btn = document.getElementById('deleteBtn');
+    btn.disabled = true;
+    setStatus('Searching for contact...', 'loading');
+
+    try {
+      const encoded = encodeURIComponent(phone);
+      const res = await fetch(`${BASE_URL}/contacts/?locationId=${LOCATION_ID}&query=${encoded}`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}`, 'Version': '2021-07-28' }
+      });
+      const data = await res.json();
+      const contacts = data.contacts || [];
+
+      if (contacts.length === 0) {
+        setStatus('No contact found with that phone number', 'error');
+        btn.disabled = false;
+        return;
+      }
+
+      let deleted = 0;
+      for (const contact of contacts) {
+        await deleteContact(contact.id);
+        deleted++;
+      }
+
+      if (createdContactId && contacts.find(c => c.id === createdContactId)) {
+        createdContactId = null;
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('resetBtn').classList.remove('active');
+      }
+
+      document.getElementById('deletePhone').value = '';
+      selectedCampaign = null;
+      document.querySelectorAll('.campaign-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('selectedDisplay').classList.remove('visible');
+
+      setStatus(`${deleted} contact${deleted > 1 ? 's' : ''} deleted. Ready to test again.`, 'success');
+      setTimeout(() => setStatus('Ready to test'), 3000);
+
+    } catch (err) {
+      setStatus('Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
     }
   }
 </script>
