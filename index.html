@@ -81,7 +81,7 @@
 
   <div class="card">
     <div class="section-label">Campaign</div>
-    <div class="campaigns-grid" id="campaignGrid">
+    <div class="campaigns-grid">
 
       <button class="campaign-btn" data-campaign="solardemoai" onclick="selectCampaign(this)">
         <span class="campaign-dot"></span>
@@ -135,38 +135,24 @@
 
 <script>
   const API_KEY = 'pit-d8a210f2-0115-42c3-b7d2-cb2bc132da3a';
+  const LOCATION_ID = 'iEWbFDsVXA7RgYBw5nbH';
   const BASE_URL = 'https://services.leadconnectorhq.com';
   let selectedCampaign = null;
   let createdContactId = null;
-  let locationId = null;
 
   function selectCampaign(btn) {
     document.querySelectorAll('.campaign-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedCampaign = btn.dataset.campaign;
-    const display = document.getElementById('selectedDisplay');
     const tag = document.getElementById('selectedTag');
     tag.textContent = selectedCampaign === '' ? '(none — Flow F)' : selectedCampaign;
-    display.classList.add('visible');
+    document.getElementById('selectedDisplay').classList.add('visible');
   }
 
   function setStatus(msg, type = '') {
     const el = document.getElementById('status');
     el.textContent = msg;
     el.className = 'status ' + type;
-  }
-
-  async function getLocationId() {
-    if (locationId) return locationId;
-    const res = await fetch(`${BASE_URL}/locations/search?limit=1`, {
-      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Version': '2021-07-28' }
-    });
-    const data = await res.json();
-    if (data.locations && data.locations.length > 0) {
-      locationId = data.locations[0].id;
-      return locationId;
-    }
-    throw new Error('No GHL location found for this API key');
   }
 
   async function createLead() {
@@ -178,12 +164,9 @@
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    setStatus('Connecting to GHL...', 'loading');
+    setStatus('Creating contact...', 'loading');
 
     try {
-      const locId = await getLocationId();
-      setStatus('Creating contact...', 'loading');
-
       const tags = selectedCampaign ? [selectedCampaign] : [];
 
       const res = await fetch(`${BASE_URL}/contacts/`, {
@@ -193,7 +176,7 @@
           'Version': '2021-07-28',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ firstName, lastName, phone, locationId: locId, tags })
+        body: JSON.stringify({ firstName, lastName, phone, locationId: LOCATION_ID, tags })
       });
 
       const data = await res.json();
@@ -216,7 +199,10 @@
     try {
       const res = await fetch(`${BASE_URL}/contacts/${createdContactId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${API_KEY}`, 'Version': '2021-07-28' }
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Version': '2021-07-28'
+        }
       });
       if (!res.ok) throw new Error('Delete failed');
       createdContactId = null;
